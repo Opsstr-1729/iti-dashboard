@@ -1,27 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Portal</title>
+    <title>Admin Portal | Manage ITI</title>
     <style>
-        body { font-family: "Times New Roman", serif; background: #0e5774; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #0e5774; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; }
-        #portal { display: none; background: white; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; padding: 20px; overflow-y: auto; }
+        :root { --p: #0e5774; --bg: #f0f2f5; }
+        body { font-family: "Times New Roman", Times, serif; background: var(--bg); margin: 0; }
+        #login-box { height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--p); }
+        .card { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; font-family: inherit; }
+        button { width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: inherit; }
+        #portal { display: none; padding: 20px; max-width: 900px; margin: auto; background: white; min-height: 100vh; }
+        .save-btn { background: #22c55e; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: var(--p); color: white; padding: 10px; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
     </style>
 </head>
 <body>
-    <div id="login-box" class="box">
-        <h2 style="text-align:center;color:#0e5774">Admin Portal</h2>
-        <input type="password" id="pw" placeholder="Password">
-        <button onclick="login()">Log In</button>
+    <div id="login-box">
+        <div class="card">
+            <h2 style="color:var(--p)">Admin Portal</h2>
+            <input type="password" id="pw" placeholder="Enter Password">
+            <button onclick="login()">Log In</button>
+        </div>
     </div>
 
     <div id="portal">
-        <div style="display:flex;justify-content:space-between;align-items:center;background:#0e5774;color:white;padding:10px;border-radius:5px;margin-bottom:20px;">
-            <h3 style="margin:0">Management Area</h3>
-            <button onclick="location.reload()" style="width:auto;background:red">Logout</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--p); padding-bottom: 10px;">
+            <h2 style="color:var(--p); margin:0;">Management Portal</h2>
+            <button onclick="location.reload()" style="width:auto; background:#64748b">Logout</button>
         </div>
         <div id="editArea"></div>
     </div>
@@ -29,20 +38,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 <script>
     const CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRD6NkoOKgii6PkfHF7gh0lov82rV_dARmt3IPrgqyazjIYvBaeuFRBXhL1Mj_u0f79HIm6OTKF6EqR/pub?output=csv';
-    const APPS_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE'; // <--- PUT YOUR URL HERE
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyrZ3lZNP2LmydXyTzhmYAh6yL6xA_qzUNW7UqpxxD991zn-CUVPD66ORgKhGNCpilqXg/exec'; 
     let db = [];
 
     function login() {
         if(document.getElementById('pw').value === 'kerala-iti-2026') {
             document.getElementById('login-box').style.display = 'none';
             document.getElementById('portal').style.display = 'block';
-            loadData();
+            load();
         } else { alert("Wrong Password"); }
     }
 
-    function loadData() {
+    function load() {
         Papa.parse(CSV, { download: true, header: true, complete: function(r) {
-            db = r.data.filter(x => x.District);
+            db = r.data.filter(i => i.District && i.District.toLowerCase() !== 'total');
             render();
         }});
     }
@@ -50,19 +59,31 @@
     async function save(iti, sId, cId, btn) {
         const s = document.getElementById(sId).value;
         const c = document.getElementById(cId).value;
-        btn.innerText = "...";
-        await fetch(APPS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ itiName: iti, smart: s, comp: c })});
-        btn.innerText = "Saved";
-        setTimeout(() => btn.innerText = "Save", 2000);
+        btn.innerText = "Wait..."; btn.disabled = true;
+        
+        try {
+            await fetch(SCRIPT_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ itiName: iti, smart: s, comp: c })
+            });
+            alert("Sent to Sheets! Syncing may take 2 mins.");
+            btn.innerText = "Saved";
+        } catch(e) {
+            alert("Sync Error");
+            btn.innerText = "Retry";
+        }
+        btn.disabled = false;
     }
 
     function render() {
-        document.getElementById('editArea').innerHTML = `<table border="1" style="width:100%;border-collapse:collapse">` + 
+        document.getElementById('editArea').innerHTML = `<table>
+            <tr style="background:#f4f7f9;"><th>ITI Name</th><th>Smart</th><th>PCs</th><th>Action</th></tr>` + 
             db.map((i, idx) => `<tr>
-                <td style="padding:10px"><b>${i['Name of ITI']}</b></td>
-                <td><input type="number" id="s_${idx}" value="${i['Smart Classrooms Required']}" style="width:40px"></td>
-                <td><input type="number" id="c_${idx}" value="${i['Computers Required']}" style="width:40px"></td>
-                <td><button onclick="save('${i['Name of ITI']}', 's_${idx}', 'c_${idx}', this)" style="background:green;color:white;padding:5px">Save</button></td>
+                <td><b>${i['Name of ITI']}</b></td>
+                <td><input type="number" id="s_${idx}" value="${i['Smart Classrooms Required']}" style="width:50px; padding:5px;"></td>
+                <td><input type="number" id="c_${idx}" value="${i['Computers Required']}" style="width:50px; padding:5px;"></td>
+                <td><button class="save-btn" onclick="save('${i['Name of ITI']}', 's_${idx}', 'c_${idx}', this)">Save</button></td>
             </tr>`).join('') + `</table>`;
     }
 </script>
