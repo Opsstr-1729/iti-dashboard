@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal</title>
+    <style>
+        body { font-family: "Times New Roman", serif; background: #0e5774; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #0e5774; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        #portal { display: none; background: white; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; padding: 20px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div id="login-box" class="box">
+        <h2 style="text-align:center;color:#0e5774">Admin Portal</h2>
+        <input type="password" id="pw" placeholder="Password">
+        <button onclick="login()">Log In</button>
+    </div>
+
+    <div id="portal">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#0e5774;color:white;padding:10px;border-radius:5px;margin-bottom:20px;">
+            <h3 style="margin:0">Management Area</h3>
+            <button onclick="location.reload()" style="width:auto;background:red">Logout</button>
+        </div>
+        <div id="editArea"></div>
+    </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script>
+    const CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRD6NkoOKgii6PkfHF7gh0lov82rV_dARmt3IPrgqyazjIYvBaeuFRBXhL1Mj_u0f79HIm6OTKF6EqR/pub?output=csv';
+    const APPS_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE'; // <--- PUT YOUR URL HERE
+    let db = [];
+
+    function login() {
+        if(document.getElementById('pw').value === 'kerala-iti-2026') {
+            document.getElementById('login-box').style.display = 'none';
+            document.getElementById('portal').style.display = 'block';
+            loadData();
+        } else { alert("Wrong Password"); }
+    }
+
+    function loadData() {
+        Papa.parse(CSV, { download: true, header: true, complete: function(r) {
+            db = r.data.filter(x => x.District);
+            render();
+        }});
+    }
+
+    async function save(iti, sId, cId, btn) {
+        const s = document.getElementById(sId).value;
+        const c = document.getElementById(cId).value;
+        btn.innerText = "...";
+        await fetch(APPS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ itiName: iti, smart: s, comp: c })});
+        btn.innerText = "Saved";
+        setTimeout(() => btn.innerText = "Save", 2000);
+    }
+
+    function render() {
+        document.getElementById('editArea').innerHTML = `<table border="1" style="width:100%;border-collapse:collapse">` + 
+            db.map((i, idx) => `<tr>
+                <td style="padding:10px"><b>${i['Name of ITI']}</b></td>
+                <td><input type="number" id="s_${idx}" value="${i['Smart Classrooms Required']}" style="width:40px"></td>
+                <td><input type="number" id="c_${idx}" value="${i['Computers Required']}" style="width:40px"></td>
+                <td><button onclick="save('${i['Name of ITI']}', 's_${idx}', 'c_${idx}', this)" style="background:green;color:white;padding:5px">Save</button></td>
+            </tr>`).join('') + `</table>`;
+    }
+</script>
+</body>
+</html>
