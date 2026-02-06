@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITI MIS | Public</title>
+    <style>
+        :root { --p: #0e5774; --bg: #f4f7f9; }
+        body { font-family: "Times New Roman", serif; background: var(--bg); margin: 0; padding: 15px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-top: 5px solid var(--p); }
+        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat { background: var(--p); color: white; padding: 15px; border-radius: 5px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+        th { background: var(--p); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        tr:nth-child(even) { background: #eef2f3; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="text-align:center;color:var(--p)">Infrastructure MIS</h2>
+        <div class="summary">
+            <div class="stat"><small>ITIs</small><br><b id="count">0</b></div>
+            <div class="stat"><small>Smart</small><br><b id="smart">0</b></div>
+            <div class="stat"><small>PCs</small><br><b id="comp">0</b></div>
+        </div>
+        <select id="dist" style="width:100%;padding:10px;margin-bottom:15px;border:1px solid var(--p)"></select>
+        <div id="table-area"></div>
+        <p style="text-align:center;margin-top:20px"><a href="admin.html" style="color:var(--p);text-decoration:none;font-weight:bold">🔒 Portal Login</a></p>
+    </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script>
+    const CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRD6NkoOKgii6PkfHF7gh0lov82rV_dARmt3IPrgqyazjIYvBaeuFRBXhL1Mj_u0f79HIm6OTKF6EqR/pub?output=csv';
+    let data = [];
+    Papa.parse(CSV, { download: true, header: true, complete: function(r) {
+        data = r.data.filter(x => x.District);
+        let s = 0, c = 0;
+        data.forEach(i => { s += parseInt(i['Smart Classrooms Required'])||0; c += parseInt(i['Computers Required'])||0; });
+        document.getElementById('count').innerText = data.length;
+        document.getElementById('smart').innerText = s;
+        document.getElementById('comp').innerText = c;
+        const ds = [...new Set(data.map(x => x.District))].sort();
+        ds.forEach(d => dist.add(new Option(d, d)));
+        render();
+    }});
+    function render() {
+        const v = dist.value;
+        const filtered = data.filter(i => !v || i.District === v);
+        document.getElementById('table-area').innerHTML = `<table><tr><th>ITI Name</th><th>Smart</th><th>PCs</th></tr>` + 
+            filtered.map(i => `<tr><td>${i['Name of ITI']}</td><td>${i['Smart Classrooms Required']}</td><td>${i['Computers Required']}</td></tr>`).join('') + `</table>`;
+    }
+    dist.onchange = render;
+</script>
+</body>
+</html>
